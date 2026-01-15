@@ -13,7 +13,7 @@ setting_up_container
 network_check
 update_os
 
-export PHP_VERSION="8.2"
+PHP_VERSION="8.2"
 PHP_APACHE="YES" PHP_MODULE="mysql,cli,redis" PHP_FPM="YES" setup_php
 setup_composer
 

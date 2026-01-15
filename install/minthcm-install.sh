@@ -34,7 +34,6 @@ ln -s "/etc/php/${PHP_VERSION}/mods-available/php-minthcm.ini" "/etc/php/${PHP_V
 chown -R www-data:www-data /var/www/MintHCM
 find /var/www/MintHCM -type d -exec chmod 755 {} \;
 find /var/www/MintHCM -type f -exec chmod 644 {} \;
-chown -R www-data:www-data /var/www/script
 msg_ok "Configured MintHCM"
 
 msg_info "Restarting Apache2"

@@ -16,7 +16,13 @@ update_os
 PHP_VERSION="8.2"
 PHP_APACHE="YES" PHP_MODULE="mysql,cli,redis" PHP_FPM="YES" setup_php
 setup_composer
+msg_info "Installing lsyncd"
 $STD apt install -y lsyncd htop vim git
+mkdir -p /var/log/lsyncd/
+mkdir -p /home/evolpe/tmp_rsync/
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+msg_ok "Installed lsyncd"
+
 msg_info "Enabling Apache modules (rewrite, headers)"
 $STD a2enmod rewrite
 $STD a2enmod headers

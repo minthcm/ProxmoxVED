@@ -16,14 +16,21 @@ update_os
 PHP_VERSION="8.2"
 PHP_APACHE="YES" PHP_MODULE="mysql,cli,redis" PHP_FPM="YES" setup_php
 setup_composer
-
+$STD apt install -y lsyncd htop vim git
 msg_info "Enabling Apache modules (rewrite, headers)"
 $STD a2enmod rewrite
 $STD a2enmod headers
 msg_ok "Enabled Apache modules (rewrite, headers)"
 
-fetch_and_deploy_gh_release "MintHCM" "minthcm/minthcm" "tarball" "latest" "/var/www/MintHCM"
-
+msg_info "Cloning MintHCM from dev.evolpe.net"
+if [[ -z "$MINTHCM_TOKEN" ]]; then
+  msg_error "MINTHCM_TOKEN not set. Export it before running this script."
+  exit 1
+fi
+$STD git clone --depth=1 --branch develop_build \
+  "https://oauth2:${MINTHCM_TOKEN}@dev.evolpe.net/MintHCM/MintHCM.git" \
+  /var/www/MintHCM
+msg_ok "Cloned MintHCM"
 msg_info "Configuring MintHCM"
 mkdir -p /etc/php/${PHP_VERSION}/mods-available
 cp /var/www/MintHCM/docker/config/000-default.conf /etc/apache2/sites-available/000-default.conf

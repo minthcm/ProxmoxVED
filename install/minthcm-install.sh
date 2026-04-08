@@ -33,7 +33,7 @@ if [[ -z "$MINTHCM_TOKEN" ]]; then
   msg_error "MINTHCM_TOKEN not set. Export it before running this script."
   exit 1
 fi
-$STD git clone --depth=1 --branch develop_build \
+$STD git clone --depth=1 --branch master_build \
   "https://oauth2:${MINTHCM_TOKEN}@dev.evolpe.net/MintHCM/MintHCM.git" \
   /var/www/MintHCM
 msg_ok "Cloned MintHCM"

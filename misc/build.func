@@ -3960,7 +3960,15 @@ create_lxc_container() {
   *) TEMPLATE_PATTERN="" ;;
   esac
 
-  msg_info "Searching for template '$TEMPLATE_SEARCH'"
+  # The pveam catalog carries templates for several architectures (e.g. both
+  # debian-13-standard_13.6-1_amd64 and _arm64). Template selection always takes
+  # the last entry after sorting, so without this filter an arm64 tarball wins on
+  # an amd64 host and the container fails to start ("sync_wait ... expected
+  # sequence number 7") because init cannot be exec'd.
+  TEMPLATE_ARCH="$(dpkg --print-architecture 2>/dev/null || echo amd64)"
+  ARCH_PATTERN="_${TEMPLATE_ARCH}\."
+
+  msg_info "Searching for template '$TEMPLATE_SEARCH' (${TEMPLATE_ARCH})"
 
   # Build regex patterns outside awk/grep for clarity
   SEARCH_PATTERN="^${TEMPLATE_SEARCH}"
@@ -3969,10 +3977,13 @@ create_lxc_container() {
   #echo "[DEBUG] SEARCH_PATTERN='$SEARCH_PATTERN'"
   #echo "[DEBUG] TEMPLATE_PATTERN='$TEMPLATE_PATTERN'"
 
+  # pveam list prints volids (storage:vztmpl/<file>), so strip the prefix before
+  # matching — otherwise ^<os>-<ver> never matches and local templates are missed.
   mapfile -t LOCAL_TEMPLATES < <(
     pveam list "$TEMPLATE_STORAGE" 2>/dev/null |
-      awk -v search="${SEARCH_PATTERN}" -v pattern="${TEMPLATE_PATTERN}" '$1 ~ search && $1 ~ pattern {print $1}' |
-      sed 's|.*/||' | sort -t - -k 2 -V
+      awk '{print $1}' | sed 's|.*/||' |
+      grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}.*${ARCH_PATTERN}" |
+      sort -t - -k 2 -V
   )
 
   pveam update >/dev/null 2>&1 || msg_warn "Could not update template catalog (pveam update failed)."
@@ -3983,7 +3994,7 @@ create_lxc_container() {
   #pveam available -section system 2>/dev/null | grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' | head -5 | sed 's/^/  /'
 
   set +u
-  mapfile -t ONLINE_TEMPLATES < <(pveam available -section system 2>/dev/null | grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' | awk '{print $2}' | grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}" | sort -t - -k 2 -V 2>/dev/null || true)
+  mapfile -t ONLINE_TEMPLATES < <(pveam available -section system 2>/dev/null | grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' | awk '{print $2}' | grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}.*${ARCH_PATTERN}" | sort -t - -k 2 -V 2>/dev/null || true)
   #echo "[DEBUG] After filtering: ${#ONLINE_TEMPLATES[@]} online templates found"
   set -u
 
@@ -4059,7 +4070,7 @@ create_lxc_container() {
           pveam available -section system 2>/dev/null |
             grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' |
             awk -F'\t' '{print $1}' |
-            grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}" |
+            grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}.*${ARCH_PATTERN}" |
             sort -t - -k 2 -V 2>/dev/null || true
         )
 
@@ -4128,14 +4139,15 @@ create_lxc_container() {
 
           mapfile -t LOCAL_TEMPLATES < <(
             pveam list "$TEMPLATE_STORAGE" 2>/dev/null |
-              awk -v search="${SEARCH_PATTERN}" -v pattern="${TEMPLATE_PATTERN}" '$1 ~ search && $1 ~ pattern {print $1}' |
-              sed 's|.*/||' | sort -t - -k 2 -V
+              awk '{print $1}' | sed 's|.*/||' |
+              grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}.*${ARCH_PATTERN}" |
+              sort -t - -k 2 -V
           )
           mapfile -t ONLINE_TEMPLATES < <(
             pveam available -section system 2>/dev/null |
               grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' |
               awk -F'\t' '{print $1}' |
-              grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}" |
+              grep -E "${SEARCH_PATTERN}.*${TEMPLATE_PATTERN}.*${ARCH_PATTERN}" |
               sort -t - -k 2 -V 2>/dev/null || true
           )
           ONLINE_TEMPLATE=""
